@@ -34,7 +34,7 @@ Medovina is a comprehensive Python-based honeypot application that combines feat
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/SirCornealious/medovina.git
 cd Medovina
 ```
 
@@ -45,18 +45,50 @@ pip install -r requirements.txt
 
 3. Run the honeypot:
 ```bash
+# Option 1: Using the management CLI (recommended)
+python scripts/manage_honeypot.py run
+
+# Option 2: Direct script execution
 python scripts/run_honeypot.py
+
+# Option 3: Direct module execution
+python src/main.py
+```
+
+### Management CLI
+
+The honeypot now includes a comprehensive CLI for management:
+
+```bash
+# Start honeypot
+python scripts/manage_honeypot.py start
+
+# Stop honeypot
+python scripts/manage_honeypot.py stop
+
+# Check status
+python scripts/manage_honeypot.py status
+
+# Show configuration
+python scripts/manage_honeypot.py config
+
+# Run interactively (with Ctrl+C to stop)
+python scripts/manage_honeypot.py run
 ```
 
 ### Testing
 
 Test the honeypot functionality:
 ```bash
-# Test SSH connection
-python scripts/test_connection.py
+# Test SSH connection (connect to localhost:22)
+ssh user@localhost
 
-# Check honeypot status and logs
-python scripts/test_connection.py status
+# Check honeypot status
+python scripts/manage_honeypot.py status
+
+# View logs
+tail -f logs/honeypot.log
+tail -f logs/attacks.json
 ```
 
 ## Configuration
@@ -154,7 +186,18 @@ python scripts/run_honeypot.py
 - Regularly review and update configurations
 - Be aware of legal implications in your jurisdiction
 
-## Development Status
+## Recent Fixes & Improvements
+
+### ✅ Critical Stability Fixes (v1.1)
+- **Fixed Freeze Issues**: Resolved infinite loop and startup freezing problems
+- **Robust Plugin Loading**: Added multiple fallback strategies for plugin imports
+- **Graceful Error Handling**: System now exits cleanly when no plugins can be loaded
+- **Improved Signal Handling**: Fixed shutdown process with proper timeout handling
+- **Management CLI**: Added comprehensive command-line interface for honeypot control
+- **Heartbeat Monitoring**: Added periodic status updates to confirm system is alive
+- **Configuration Cleanup**: Disabled unimplemented plugins to prevent startup failures
+
+### Development Status
 
 ### ✅ Completed
 - Core framework and plugin architecture
@@ -163,6 +206,8 @@ python scripts/run_honeypot.py
 - Base server framework for TCP/UDP services
 - SSH honeypot plugin implementation
 - Basic project structure and setup scripts
+- **Management CLI interface**
+- **Stability and error handling improvements**
 
 ### 🚧 In Progress
 - Additional protocol plugins (HTTP, database, mail, etc.)

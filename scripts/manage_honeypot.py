@@ -1,233 +1,139 @@
 #!/usr/bin/env python3
 """
 Honeypot Management CLI
-Provides command-line interface for managing and monitoring the honeypot
+Provides a command-line interface for managing the honeypot
 """
 
-import json
+import argparse
 import sys
 import os
+import asyncio
 from pathlib import Path
-from datetime import datetime
-from typing import Dict, List, Any
 
-def get_project_root() -> Path:
-    """Get the project root directory"""
-    return Path(__file__).parent.parent
+# Add src directory to Python path
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+sys.path.insert(0, str(project_root / "src"))
 
-def load_config() -> Dict[str, Any]:
-    """Load honeypot configuration"""
-    config_path = get_project_root() / "config" / "default_config.yaml"
-    try:
-        import yaml
-        with open(config_path, 'r') as f:
-            return yaml.safe_load(f) or {}
-    except Exception as e:
-        print(f"Error loading config: {e}")
-        return {}
+from main import UnifiedHoneypot
 
-def show_status():
-    """Show honeypot status"""
-    print("🛡️  Medovina Honeypot Status")
-    print("=" * 40)
+class HoneypotManager:
+    """CLI manager for the honeypot"""
 
-    config = load_config()
+    def __init__(self):
+        self.honeypot = None
 
-    # Check if honeypot is running (by checking for log activity)
-    log_file = get_project_root() / "logs" / "honeypot.log"
-    is_running = False
+    async def start(self, timeout=None):
+        """Start the honeypot"""
+        print("🚀 Starting Medovina Honeypot...")
+        self.honeypot = UnifiedHoneypot()
 
-    if log_file.exists():
         try:
-            with open(log_file, 'r') as f:
-                lines = f.readlines()
-                if lines:
-                    last_line = lines[-1]
-                    if "Unified Honeypot started successfully" in last_line:
-                        is_running = True
-                        print(f"✅ Status: RUNNING")
-                    else:
-                        print(f"❓ Status: UNKNOWN")
-                else:
-                    print(f"❌ Status: NOT RUNNING")
+            await self.honeypot.start()
+            print("✅ Honeypot started successfully!")
         except Exception as e:
-            print(f"❌ Error reading log: {e}")
-    else:
-        print(f"❌ Status: NOT RUNNING (no log file)")
+            print(f"❌ Failed to start honeypot: {e}")
+            return False
+        return True
 
-    # Show configuration info
-    print(f"\n📋 Configuration:")
-    print(f"   Hostname: {config.get('global', {}).get('hostname', 'unknown')}")
-    print(f"   Bind Address: {config.get('global', {}).get('bind_address', 'unknown')}")
-    print(f"   Max Connections: {config.get('global', {}).get('max_connections', 'unknown')}")
-
-    # Show enabled plugins
-    plugins = config.get('plugins', {})
-    enabled_plugins = [name for name, plugin_config in plugins.items()
-                      if plugin_config.get('enabled', False)]
-
-    print(f"\n🔌 Enabled Plugins ({len(enabled_plugins)}):")
-    for plugin in enabled_plugins:
-        plugin_config = plugins[plugin]
-        if plugin == 'ssh' and plugin_config.get('enabled'):
-            port = plugin_config.get('port', 'unknown')
-            print(f"   • SSH Honeypot (Port {port})")
-        elif plugin == 'http' and plugin_config.get('enabled'):
-            port = plugin_config.get('port', 'unknown')
-            print(f"   • HTTP Honeypot (Port {port})")
+    async def stop(self):
+        """Stop the honeypot"""
+        if self.honeypot:
+            print("🛑 Stopping honeypot...")
+            await self.honeypot.stop()
+            print("✅ Honeypot stopped successfully!")
         else:
-            print(f"   • {plugin.upper()} Honeypot")
+            print("⚠️  Honeypot is not running")
 
-    # Management interface info
-    mgmt = config.get('management', {})
-    if mgmt.get('enabled', False):
-        port = mgmt.get('port', 8080)
-        print(f"\n🌐 Management Interface:")
-        print(f"   Port: {port}")
-        print("   Status: Not implemented yet")
-    print()
+    def status(self):
+        """Get honeypot status"""
+        if self.honeypot:
+            status = self.honeypot.get_status()
+            print("📊 Honeypot Status:")
+            print(f"   Running: {'✅ Yes' if status['running'] else '❌ No'}")
+            print(f"   Plugins: {len(status['plugins'])} active")
+            print(f"   Hostname: {status['config']['hostname']}")
+            print(f"   Bind Address: {status['config']['bind_address']}")
+            print(f"   Max Connections: {status['config']['max_connections']}")
+        else:
+            print("📊 Honeypot Status: Not initialized")
 
-def show_recent_attacks(limit: int = 10):
-    """Show recent attacks from JSON log"""
-    print("🎯 Recent Attacks")
-    print("=" * 40)
+    def show_config(self):
+        """Show current configuration"""
+        from core.config import config_manager
+        print("⚙️  Current Configuration:")
+        print(f"   Hostname: {config_manager.get('global.hostname')}")
+        print(f"   Log Level: {config_manager.get('global.log_level')}")
+        print(f"   Bind Address: {config_manager.get('global.bind_address')}")
+        print(f"   Max Connections: {config_manager.get('global.max_connections')}")
 
-    attacks_file = get_project_root() / "logs" / "attacks.json"
-
-    if not attacks_file.exists():
-        print("No attacks logged yet")
-        return
-
-    try:
-        attacks = []
-        with open(attacks_file, 'r') as f:
-            for line in f:
-                try:
-                    attacks.append(json.loads(line.strip()))
-                except:
-                    continue
-
-        if not attacks:
-            print("No attacks logged yet")
-            return
-
-        # Sort by timestamp (most recent first)
-        attacks.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
-
-        for i, attack in enumerate(attacks[:limit]):
-            timestamp = attack.get('timestamp', 'unknown')
-            service = attack.get('service', 'unknown')
-            source_ip = attack.get('source_ip', 'unknown')
-            attack_type = attack.get('attack_type', 'unknown')
-
-            # Format timestamp
-            try:
-                dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
-                time_str = dt.strftime('%Y-%m-%d %H:%M:%S')
-            except:
-                time_str = timestamp
-
-            print(f"{i+1:2d}. [{time_str}] {service.upper():8} | {source_ip:15} | {attack_type}")
-
-        print(f"\nShowing {min(limit, len(attacks))} of {len(attacks)} total attacks")
-
-    except Exception as e:
-        print(f"Error reading attacks log: {e}")
-
-def show_logs(lines: int = 20):
-    """Show recent log entries"""
-    print("📄 Recent Log Entries")
-    print("=" * 40)
-
-    log_file = get_project_root() / "logs" / "honeypot.log"
-
-    if not log_file.exists():
-        print("No log file found")
-        return
-
-    try:
-        with open(log_file, 'r') as f:
-            all_lines = f.readlines()
-
-        recent_lines = all_lines[-lines:]
-
-        for line in recent_lines:
-            print(line.strip())
-
-        print(f"\nShowing last {len(recent_lines)} of {len(all_lines)} total lines")
-
-    except Exception as e:
-        print(f"Error reading log file: {e}")
-
-def show_help():
-    """Show help information"""
-    print("🛡️  Medovina Honeypot Management CLI")
-    print("=" * 50)
-    print("Available commands:")
-    print("  status      - Show honeypot status and configuration")
-    print("  attacks     - Show recent attacks")
-    print("  logs        - Show recent log entries")
-    print("  help        - Show this help message")
-    print("  exit        - Exit the CLI")
-    print()
-    print("Usage examples:")
-    print("  python3 scripts/manage_honeypot.py status")
-    print("  python3 scripts/manage_honeypot.py attacks")
-    print("  python3 scripts/manage_honeypot.py logs")
-    print()
-
-def interactive_mode():
-    """Run in interactive mode"""
-    print("🛡️  Medovina Honeypot Management CLI")
-    print("Type 'help' for available commands or 'exit' to quit")
-    print()
-
-    while True:
-        try:
-            cmd = input("honeypot> ").strip().lower()
-
-            if cmd == 'exit' or cmd == 'quit':
-                print("Goodbye!")
-                break
-            elif cmd == 'status':
-                show_status()
-            elif cmd == 'attacks':
-                show_recent_attacks()
-            elif cmd == 'logs':
-                show_logs()
-            elif cmd == 'help':
-                show_help()
-            elif cmd == '':
-                continue
-            else:
-                print(f"Unknown command: {cmd}")
-                print("Type 'help' for available commands")
-
-        except KeyboardInterrupt:
-            print("\nGoodbye!")
-            break
-        except Exception as e:
-            print(f"Error: {e}")
+        enabled_plugins = config_manager.get_enabled_plugins()
+        print(f"   Enabled Plugins ({len(enabled_plugins)}):")
+        for name in enabled_plugins.keys():
+            print(f"     • {name}")
 
 def main():
-    if len(sys.argv) > 1:
-        command = sys.argv[1].lower()
+    parser = argparse.ArgumentParser(
+        description="Medovina Honeypot Management CLI",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python manage_honeypot.py start          # Start honeypot
+  python manage_honeypot.py stop           # Stop honeypot
+  python manage_honeypot.py status         # Show status
+  python manage_honeypot.py config         # Show configuration
+  python manage_honeypot.py run            # Run interactively
+        """
+    )
 
-        if command == 'status':
-            show_status()
-        elif command == 'attacks':
-            limit = int(sys.argv[2]) if len(sys.argv) > 2 else 10
-            show_recent_attacks(limit)
-        elif command == 'logs':
-            lines = int(sys.argv[2]) if len(sys.argv) > 2 else 20
-            show_logs(lines)
-        elif command == 'help':
-            show_help()
-        else:
-            print(f"Unknown command: {command}")
-            show_help()
-    else:
-        interactive_mode()
+    parser.add_argument(
+        'command',
+        choices=['start', 'stop', 'status', 'config', 'run'],
+        help='Command to execute'
+    )
+
+    parser.add_argument(
+        '--timeout',
+        type=int,
+        default=None,
+        help='Timeout for start command in seconds'
+    )
+
+    args = parser.parse_args()
+    manager = HoneypotManager()
+
+    if args.command == 'start':
+        print("🔄 Starting honeypot in background...")
+        try:
+            success = asyncio.run(manager.start(timeout=args.timeout))
+            if success:
+                print("✅ Honeypot is now running in the background")
+                print("💡 Use 'python manage_honeypot.py stop' to stop it")
+            else:
+                print("❌ Failed to start honeypot")
+                sys.exit(1)
+        except KeyboardInterrupt:
+            print("\n🛑 Startup interrupted by user")
+            asyncio.run(manager.stop())
+            sys.exit(1)
+
+    elif args.command == 'stop':
+        asyncio.run(manager.stop())
+
+    elif args.command == 'status':
+        manager.status()
+
+    elif args.command == 'config':
+        manager.show_config()
+
+    elif args.command == 'run':
+        print("🎮 Running honeypot interactively...")
+        print("🛑 Press Ctrl+C to stop")
+        try:
+            asyncio.run(manager.start())
+        except KeyboardInterrupt:
+            print("\n🛑 Shutdown requested by user")
+            asyncio.run(manager.stop())
 
 if __name__ == "__main__":
     main()
