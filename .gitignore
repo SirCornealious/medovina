@@ -152,6 +152,9 @@ dmypy.json
 *.swo
 *~
 
+# Cursor IDE
+.cursor/
+
 # OS generated files
 .DS_Store
 .DS_Store?
@@ -234,6 +237,13 @@ secrets/
 
 # Database files
 *.db-journal
+
+# Honeypot-specific data and captures
+captures/
+packet_captures/
+honeypot.db
+attacks.db
+threat_data/
 
 # Cache directories
 .cache/

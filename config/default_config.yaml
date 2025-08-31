@@ -267,4 +267,4 @@ monitoring:
 auto_update:
   enabled: false
   check_interval: 86400  # 24 hours
-  update_url: "https://api.github.com/repos/user/unified-honeypot/releases/latest"
+  update_url: "https://api.github.com/repos/user/Medovina/releases/latest"
