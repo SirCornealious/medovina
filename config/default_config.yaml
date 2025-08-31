@@ -38,9 +38,9 @@ plugins:
       - "cat"
       - "echo"
 
-  # HTTP/HTTPS Web Honeypot
+  # HTTP/HTTPS Web Honeypot - NOT IMPLEMENTED YET
   http:
-    enabled: true
+    enabled: false  # Set to true when HTTP plugin is implemented
     port: 80
     ssl_port: 443
     ssl_enabled: false
@@ -56,9 +56,9 @@ plugins:
         content_type: "text/html"
         response_code: 200
 
-  # Database honeypots
+  # Database honeypots - NOT IMPLEMENTED YET
   mysql:
-    enabled: true
+    enabled: false  # Set to true when MySQL plugin is implemented
     port: 3306
     version: "8.0.30"
     fake_databases:
@@ -66,7 +66,7 @@ plugins:
         tables: ["users", "posts", "comments"]
 
   postgresql:
-    enabled: true
+    enabled: false  # Set to true when PostgreSQL plugin is implemented
     port: 5432
     version: "14.5"
     fake_databases:
@@ -74,37 +74,37 @@ plugins:
         tables: ["users", "sessions"]
 
   mongodb:
-    enabled: true
+    enabled: false  # Set to true when MongoDB plugin is implemented
     port: 27017
     version: "5.0.8"
 
-  # Mail services
+  # Mail services - NOT IMPLEMENTED YET
   smtp:
-    enabled: true
+    enabled: false  # Set to true when SMTP plugin is implemented
     port: 25
     ssl_port: 465
     server_name: "mail.honeypot.local"
 
   pop3:
-    enabled: true
+    enabled: false  # Set to true when POP3 plugin is implemented
     port: 110
     ssl_port: 995
 
   imap:
-    enabled: true
+    enabled: false  # Set to true when IMAP plugin is implemented
     port: 143
     ssl_port: 993
 
-  # File services
+  # File services - NOT IMPLEMENTED YET
   ftp:
-    enabled: true
+    enabled: false  # Set to true when FTP plugin is implemented
     port: 21
     passive_ports: "40000-40100"
     anonymous_login: true
 
-  # Network services
+  # Network services - NOT IMPLEMENTED YET
   dns:
-    enabled: true
+    enabled: false  # Set to true when DNS plugin is implemented
     port: 53
     fake_domains:
       - "honeypot.local"
@@ -114,72 +114,72 @@ plugins:
     enabled: false  # Usually requires special setup
     port: 67
 
-  # Remote services
+  # Remote services - NOT IMPLEMENTED YET
   rdp:
-    enabled: true
+    enabled: false  # Set to true when RDP plugin is implemented
     port: 3389
     version: "10.0.19041"
 
   vnc:
-    enabled: true
+    enabled: false  # Set to true when VNC plugin is implemented
     port: 5900
     password: "password"
 
-  # Chat services
+  # Chat services - NOT IMPLEMENTED YET
   irc:
-    enabled: true
+    enabled: false  # Set to true when IRC plugin is implemented
     port: 6667
     channels: ["#honeypot", "#admin"]
 
-  # VoIP services
+  # VoIP services - NOT IMPLEMENTED YET
   sip:
-    enabled: true
+    enabled: false  # Set to true when SIP plugin is implemented
     port: 5060
     user_agents:
       - "Asterisk PBX"
       - "FreeSWITCH"
 
-  # Industrial Control Systems (inspired by Conpot)
+  # Industrial Control Systems - NOT IMPLEMENTED YET
   modbus:
-    enabled: true
+    enabled: false  # Set to true when Modbus plugin is implemented
     port: 502
     device_id: 1
     function_codes: [1, 2, 3, 4, 5, 6, 15, 16]
 
   dnp3:
-    enabled: true
+    enabled: false  # Set to true when DNP3 plugin is implemented
     port: 20000
     master_address: 1
     slave_address: 10
 
-  # Other protocols
+  # Other protocols - NOT IMPLEMENTED YET
   telnet:
-    enabled: true
+    enabled: false  # Set to true when Telnet plugin is implemented
     port: 23
     banner: "Welcome to honeypot"
 
   snmp:
-    enabled: true
+    enabled: false  # Set to true when SNMP plugin is implemented
     port: 161
     community_strings: ["public", "private"]
     version: "v2c"
 
   ntp:
-    enabled: true
+    enabled: false  # Set to true when NTP plugin is implemented
     port: 123
     version: "4.2.8p15"
 
   memcached:
-    enabled: true
+    enabled: false  # Set to true when Memcached plugin is implemented
     port: 11211
 
   redis:
-    enabled: true
+    enabled: false  # Set to true when Redis plugin is implemented
     port: 6379
     password: ""
 
   elasticsearch:
-    enabled: true
+    enabled: false  # Set to true when Elasticsearch plugin is implemented
     port: 9200
     version: "7.17.0"
 
