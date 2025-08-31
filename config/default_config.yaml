@@ -1,0 +1,270 @@
+# Unified Honeypot Configuration
+# Combines features from Cowrie, OpenCanary, HoneyPy, and others
+
+global:
+  # Basic settings
+  hostname: "honeypot.local"
+  timezone: "UTC"
+  log_level: "INFO"
+
+  # Network settings
+  bind_address: "0.0.0.0"
+  external_address: ""  # Auto-detect if empty
+
+  # Performance settings
+  max_connections: 1000
+  connection_timeout: 300
+  worker_threads: 4
+
+# Plugin configurations
+plugins:
+  # SSH Honeypot (inspired by Cowrie)
+  ssh:
+    enabled: true
+    port: 22
+    banner: "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1"
+    auth_methods: ["password", "keyboard-interactive"]
+    fake_users:
+      - username: "admin"
+        password: "admin"
+      - username: "root"
+        password: "root"
+      - username: "user"
+        password: "password"
+    shell_commands:
+      - "whoami"
+      - "ls"
+      - "pwd"
+      - "cat"
+      - "echo"
+
+  # HTTP/HTTPS Web Honeypot
+  http:
+    enabled: true
+    port: 80
+    ssl_port: 443
+    ssl_enabled: false
+    server_header: "Apache/2.4.41 (Ubuntu)"
+    fake_pages:
+      - path: "/admin"
+        content_type: "text/html"
+        response_code: 200
+      - path: "/wp-admin"
+        content_type: "text/html"
+        response_code: 200
+      - path: "/login"
+        content_type: "text/html"
+        response_code: 200
+
+  # Database honeypots
+  mysql:
+    enabled: true
+    port: 3306
+    version: "8.0.30"
+    fake_databases:
+      - name: "wordpress"
+        tables: ["users", "posts", "comments"]
+
+  postgresql:
+    enabled: true
+    port: 5432
+    version: "14.5"
+    fake_databases:
+      - name: "app_db"
+        tables: ["users", "sessions"]
+
+  mongodb:
+    enabled: true
+    port: 27017
+    version: "5.0.8"
+
+  # Mail services
+  smtp:
+    enabled: true
+    port: 25
+    ssl_port: 465
+    server_name: "mail.honeypot.local"
+
+  pop3:
+    enabled: true
+    port: 110
+    ssl_port: 995
+
+  imap:
+    enabled: true
+    port: 143
+    ssl_port: 993
+
+  # File services
+  ftp:
+    enabled: true
+    port: 21
+    passive_ports: "40000-40100"
+    anonymous_login: true
+
+  # Network services
+  dns:
+    enabled: true
+    port: 53
+    fake_domains:
+      - "honeypot.local"
+      - "admin.honeypot.local"
+
+  dhcp:
+    enabled: false  # Usually requires special setup
+    port: 67
+
+  # Remote services
+  rdp:
+    enabled: true
+    port: 3389
+    version: "10.0.19041"
+
+  vnc:
+    enabled: true
+    port: 5900
+    password: "password"
+
+  # Chat services
+  irc:
+    enabled: true
+    port: 6667
+    channels: ["#honeypot", "#admin"]
+
+  # VoIP services
+  sip:
+    enabled: true
+    port: 5060
+    user_agents:
+      - "Asterisk PBX"
+      - "FreeSWITCH"
+
+  # Industrial Control Systems (inspired by Conpot)
+  modbus:
+    enabled: true
+    port: 502
+    device_id: 1
+    function_codes: [1, 2, 3, 4, 5, 6, 15, 16]
+
+  dnp3:
+    enabled: true
+    port: 20000
+    master_address: 1
+    slave_address: 10
+
+  # Other protocols
+  telnet:
+    enabled: true
+    port: 23
+    banner: "Welcome to honeypot"
+
+  snmp:
+    enabled: true
+    port: 161
+    community_strings: ["public", "private"]
+    version: "v2c"
+
+  ntp:
+    enabled: true
+    port: 123
+    version: "4.2.8p15"
+
+  memcached:
+    enabled: true
+    port: 11211
+
+  redis:
+    enabled: true
+    port: 6379
+    password: ""
+
+  elasticsearch:
+    enabled: true
+    port: 9200
+    version: "7.17.0"
+
+# Logging configuration
+logging:
+  # File logging
+  file:
+    enabled: true
+    path: "logs/honeypot.log"
+    max_size: "100MB"
+    backup_count: 5
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+  # Database logging
+  database:
+    enabled: false
+    type: "sqlite"  # sqlite, mysql, postgresql
+    path: "data/attacks.db"
+
+  # Syslog
+  syslog:
+    enabled: false
+    server: "localhost"
+    port: 514
+    facility: "local0"
+
+  # JSON logging for analysis
+  json:
+    enabled: true
+    path: "logs/attacks.json"
+    fields:
+      - timestamp
+      - source_ip
+      - source_port
+      - destination_port
+      - protocol
+      - service
+      - attack_type
+      - payload
+      - response
+
+# Analysis and alerting
+analysis:
+  # GeoIP lookup
+  geoip:
+    enabled: true
+    database_path: "data/GeoLite2-City.mmdb"
+
+  # Threat intelligence integration
+  threat_intel:
+    enabled: false
+    sources:
+      - "abuseipdb"
+      - "virustotal"
+
+  # Alerting
+  alerts:
+    enabled: false
+    email:
+      smtp_server: "smtp.gmail.com"
+      smtp_port: 587
+      username: ""
+      password: ""
+      recipients: []
+    slack:
+      webhook_url: ""
+      channel: "#honeypot-alerts"
+
+# Management interface
+management:
+  enabled: true
+  port: 8080
+  auth_required: true
+  username: "admin"
+  password: "changeme"
+
+# Performance monitoring
+monitoring:
+  enabled: true
+  metrics_port: 9090
+  collect_stats: true
+  stats_interval: 60  # seconds
+
+# Auto-update configuration
+auto_update:
+  enabled: false
+  check_interval: 86400  # 24 hours
+  update_url: "https://api.github.com/repos/user/unified-honeypot/releases/latest"
